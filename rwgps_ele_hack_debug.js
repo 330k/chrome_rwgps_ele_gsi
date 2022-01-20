@@ -130,10 +130,9 @@
       pt.flattened = null;
       pt.ele = await getElevationGSI(pt.point.lat, pt.point.lng);
       
-      ele_status.innerText = "%%TEMPLATE_DEFAULT_MESSAGE%% (" + i + " / " + Routes.activeMap.activeRoute._trackPoints.length + ")";
+      ele_status.innerText = i + " / " + Routes.activeMap.activeRoute._trackPoints.length;
     }
-    
-    ele_status.innerText = "%%TEMPLATE_DEFAULT_MESSAGE%%";
+    ele_status.innerText = "";
     
     Routes.activeMap.activeRoute.flattenBridgesAndTunnels();
     Routes.activeMap.activeRoute.resetGrade();
