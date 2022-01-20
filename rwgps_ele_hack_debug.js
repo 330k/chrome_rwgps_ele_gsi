@@ -1,5 +1,5 @@
 // https://www.toptal.com/developers/javascript-minifier/
-// minifyしたものをhrefに入れる
+// minifyしたものをrwgps_ele_hack.jsのfunc_strにコピー
 
 (function(global){
   const TILE_SIZE = 256;
@@ -74,59 +74,47 @@
     
     if(!(cache[tilename][zoom][tileinfo.tile_x] && cache[tilename][zoom][tileinfo.tile_x][tileinfo.tile_y])){
       // キャッシュにタイルがない場合
-      const pngblob = await fetch("https://cyberjapandata.gsi.go.jp/xyz/" + tilename + "/" + zoom + "/" + tileinfo.tile_x + "/" + tileinfo.tile_y + ".png").then(response => {
+      let imagedata = TILE_NULL_SYMBOL;
+      await fetch("https://cyberjapandata.gsi.go.jp/xyz/" + tilename + "/" + zoom + "/" + tileinfo.tile_x + "/" + tileinfo.tile_y + ".png").then(response => {
         if(response.ok){
           return response.blob();
         }else{
-          return null;
+          throw new Error(response.status);
         }
+      }).then((pngblob) => new Promise(function(resolve, reject){
+        const img = document.createElement("img");
+        img.src = URL.createObjectURL(pngblob);
+        img.onload = function(){ resolve(img); };
+          
+      })).then((img) => {
+        ctx.drawImage(img, 0, 0, TILE_SIZE, TILE_SIZE);
+        imagedata = ctx.getImageData(0, 0, TILE_SIZE, TILE_SIZE).data;
+        
+      }).catch(() => {
+        //console.log("ERROR");
       });
-      
-      let eledata = [];
-      if(pngblob !== null){
-        await (new Promise(function(resolve, reject){
-          const img = document.createElement("img");
-          img.src = URL.createObjectURL(pngblob);
-          img.onload = function(){ resolve(img); };
-          
-        })).then(img => {
-          ctx.drawImage(img, 0, 0, TILE_SIZE, TILE_SIZE);
-          const imagedata = ctx.getImageData(0, 0, TILE_SIZE, TILE_SIZE).data;
-          
-          for(let j = 0; j < TILE_SIZE; j++){
-            const r = [];
-            for(let i = 0; i < TILE_SIZE; i++){
-              const x = 65536 * imagedata[(j * TILE_SIZE + i) * 4] + 256 * imagedata[(j * TILE_SIZE + i) * 4 + 1] + imagedata[(j * TILE_SIZE + i) * 4 + 2];
-              
-              if(x < 2 ** 23){
-                r.push(x * 0.01);
-              }else if(x === 2 ** 23){
-                r.push(null);
-              }else{
-                r.push((x - 2 ** 24) * 0.01);
-              }
-            }
-            eledata.push(r);
-          }
-        });
         
-      }else{
-        // エラー時は存在しないことを示すシンボルにする
-        eledata = TILE_NULL_SYMBOL;
-      }
-        
-      // キャッシュに登録
+      // ImageDataをキャッシュに登録
       if(!(cache[tilename][zoom][tileinfo.tile_x])){
         cache[tilename][zoom][tileinfo.tile_x] = {};
       }
-      cache[tilename][zoom][tileinfo.tile_x][tileinfo.tile_y] = eledata;
+      cache[tilename][zoom][tileinfo.tile_x][tileinfo.tile_y] = imagedata;
     }
     
-    const eledata = cache[tilename][zoom][tileinfo.tile_x][tileinfo.tile_y];
+    const imagedata = cache[tilename][zoom][tileinfo.tile_x][tileinfo.tile_y];
     
     // 最近傍点の標高を返す
-    if(eledata !== TILE_NULL_SYMBOL){
-      return eledata[Math.floor(tileinfo.pixel_y)][Math.floor(tileinfo.pixel_x)];
+    if(imagedata !== TILE_NULL_SYMBOL){
+      const idx = 4 * (Math.floor(tileinfo.pixel_y) * TILE_SIZE + Math.floor(tileinfo.pixel_x));
+      const x = 65536 * imagedata[idx] + 256 * imagedata[idx + 1] + imagedata[idx + 2];
+      
+      if(x < 2 ** 23){
+        return x * 0.01;
+      }else if(x === 2 ** 23){
+        return null;
+      }else{
+        return (x - 2 ** 24) * 0.01;
+      }
     }else{
       return null;
     }
@@ -134,7 +122,7 @@
   };
   
   async function addElevationToRoute(){
-    const ele_status = document.getElementById("__330k_rwgps_gsi_001");
+    const ele_status = document.getElementById("%%TEMPLATE_MESSAGE_ID%%");
     
     for(let i = 0; i < Routes.activeMap.activeRoute._trackPoints.length; i++){
       let pt = Routes.activeMap.activeRoute._trackPoints[i];
@@ -142,10 +130,10 @@
       pt.flattened = null;
       pt.ele = await getElevationGSI(pt.point.lat, pt.point.lng);
       
-      ele_status.innerText = "国土地理院標高に書き換え (" + i + " / " + Routes.activeMap.activeRoute._trackPoints.length + ")";
+      ele_status.innerText = "%%TEMPLATE_DEFAULT_MESSAGE%% (" + i + " / " + Routes.activeMap.activeRoute._trackPoints.length + ")";
     }
     
-    ele_status.innerText = "国土地理院標高に書き換え";
+    ele_status.innerText = "%%TEMPLATE_DEFAULT_MESSAGE%%";
     
     Routes.activeMap.activeRoute.flattenBridgesAndTunnels();
     Routes.activeMap.activeRoute.resetGrade();
@@ -155,4 +143,4 @@
   };
   
   addElevationToRoute();
-})(this);
+})(window);

@@ -7,7 +7,7 @@
   "host_permissions": [ "https://ridewithgps.com/routes/*" ],
   "content_scripts": [
     {
-      "matches": ["https://ridewithgps.com/routes/*"],
+      "matches": ["https://ridewithgps.com/routes/new", "https://ridewithgps.com/routes/*/edit*"],
       "run_at": "document_end",
       "js": ["rwgps_ele_hack.js"]
     }
