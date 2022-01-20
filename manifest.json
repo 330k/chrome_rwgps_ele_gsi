@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "version": "0.1",
+  "name": "RWGPS標高書き換え",
+  "short_name": "RWGPS標高書き換え",
+  "description": "RWGPSで作成中のルートの標高値を国土地理院標高タイルAPIから取得した値に書き換えます。",
+  "host_permissions": [ "https://ridewithgps.com/routes/*" ],
+  "content_scripts": [
+    {
+      "matches": ["https://ridewithgps.com/routes/*"],
+      "run_at": "document_end",
+      "js": ["rwgps_ele_hack.js"]
+    }
+  ],
+  "icons": {
+    "128": "icon_128.png"
+  },
+  "homepage_url": "http://www.330k.info/"
+}
