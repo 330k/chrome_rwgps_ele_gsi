@@ -3,7 +3,7 @@
 
 (function(global){
   const TILE_SIZE = 256;
-  const TILE_NULL_SYMBOL = Symbol(); // タイルファイルが存在しないことを示すシンボル
+  const TILE_NULL_SYMBOL = "__NOT_EXISTS__"; // タイルファイルが存在しないことを示すシンボル
   const TILE_ORDER = [
     {tilename: "dem5a_png", zoom: 15},
     {tilename: "dem5b_png", zoom: 15},
@@ -27,8 +27,10 @@
       "pixel_y" : (y - Math.floor(y)) * 256
     };
   }
-  
-  const cache = {};
+  if(!(global["__330k_cache__"])){
+    global["__330k_cache__"] = {};
+  }
+  const cache = global["__330k_cache__"];
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
   canvas.width = TILE_SIZE;
