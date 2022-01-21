@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "version": "0.1",
-  "name": "RWGPS標高書き換え",
-  "short_name": "RWGPS標高書き換え",
-  "description": "RWGPSで作成中のルートの標高値を国土地理院標高タイルAPIから取得した値に書き換えます。",
+  "name": "RWGPS地理院標高",
+  "short_name": "RWGPS-GSIELE",
+  "description": "RWGPSでルートを作成するとき、標高値を国土地理院の標高タイル(基盤地図情報数値標高モデル)から取得するように変更します。",
   "host_permissions": [ "https://ridewithgps.com/routes/*" ],
   "content_scripts": [
     {
@@ -15,5 +15,5 @@
   "icons": {
     "128": "icon_128.png"
   },
-  "homepage_url": "http://www.330k.info/"
+  "homepage_url": "https://www.330k.info/"
 }
