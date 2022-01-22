@@ -147,11 +147,11 @@
   if(rwgps.Map.prototype.fetchElevations === global["__330k_fetchElevations_org"]){
     // RWGPSのfetchElevations関数を書き換える
     rwgps.Map.prototype.fetchElevations = _fetchElevations;
-    document.getElementById("%%TEMPLATE_BUTTON_ID%%").style.background = "pink";
+    document.getElementById("%%TEMPLATE_BUTTON_ID%%").style.borderColor = "pink";
   }else{
     // 元に戻す
     rwgps.Map.prototype.fetchElevations = global["__330k_fetchElevations_org"];
-    document.getElementById("%%TEMPLATE_BUTTON_ID%%").style.background = "none";
+    document.getElementById("%%TEMPLATE_BUTTON_ID%%").style.borderColor = "transparent";
   }
   
 })(window);
