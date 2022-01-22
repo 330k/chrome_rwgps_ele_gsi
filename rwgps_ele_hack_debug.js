@@ -135,10 +135,14 @@
     }
     
     // なぜか獲得標高の計算にトンネル補正がなぜかかからない(たぶん路面状態の取得とタイミングが合わなくなる)ので、1秒後に再計算・描画させる。
-    setTimeout(() => {
-      //this.activeRoute.flattenBridgesAndTunnels();
-      _success();
-    }, 1000);
+    (function(activeMap){
+      setTimeout(() => {
+        _success();
+        setTimeout(() => {
+          activeMap.activeRoute.calculateMetrics();
+        }, 1000);
+      }, 1000);
+    })(this);
   }
   
   if(!(global["__330k_fetchElevations_org"])){
