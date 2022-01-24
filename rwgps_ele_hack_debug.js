@@ -2,14 +2,37 @@
 // minifyしたものをrwgps_ele_hack.jsのfunc_strにコピー
 
 (function(global){
+  if(!(global["__330k_ele_gsi"])){
+    global["__330k_ele_gsi"] = {};
+  }
+  const root = global["__330k_ele_gsi"];
+  if(!(root["tile_cache"])){
+    root["tile_cache"] = {};
+  }
+  const cache = root["tile_cache"];
+  if(!(root["fetchElevations_org"])){
+    root["fetchElevations_org"] = rwgps.Map.prototype.fetchElevations;
+  }
+  if(!(root["processing_points"])){
+    root["processing_points"] = {
+      fetched: 0,
+      total: 0
+    };
+  }
+  
   const TILE_SIZE = 256;
   const TILE_NULL_SYMBOL = "__NOT_EXISTS__"; // タイルファイルが存在しないことを示すシンボル
-  const TILE_ORDER = [
+  const TILE_ORDER = [ // 検索順序とズームレベル
     {tilename: "dem5a_png", zoom: 15},
     {tilename: "dem5b_png", zoom: 15},
     {tilename: "dem5c_png", zoom: 15},
     {tilename: "dem_png", zoom: 14}
-  ]; // 検索順序とズームレベル
+  ];
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  canvas.width = TILE_SIZE;
+  canvas.height = TILE_SIZE;
+  
   
   /**
    * 指定した緯度経度とズームレベルから、タイル番号とタイル内のx, y座標を返す
@@ -27,14 +50,6 @@
       "pixel_y" : (y - Math.floor(y)) * 256
     };
   }
-  if(!(global["__330k_cache__"])){
-    global["__330k_cache__"] = {};
-  }
-  const cache = global["__330k_cache__"];
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-  canvas.width = TILE_SIZE;
-  canvas.height = TILE_SIZE;
   
   /**
    * 指定した緯度経度の標高を基盤地図情報APIから取得する
@@ -47,7 +62,7 @@
     for(const tile of TILE_ORDER){
       ele = await _getElevationGSI(lat, lon, tile.tilename, tile.zoom);
       if(ele !== null){
-        if(tile.tilename !== "dem5a_png"){ console.log(tile.tilename); }
+        //if(tile.tilename !== "dem5a_png"){ console.log(tile.tilename); }
         break;
       }
     }
@@ -122,17 +137,23 @@
   };
   
   async function _fetchElevations(trackPoints, _success) {
+    root["processing_points"].total += trackPoints.length;
+    
     for(const trkpt of trackPoints){
       trkpt.fetchingEle = true;
     }
     
     for(const trkpt of trackPoints){
       trkpt.ele = await getElevationGSI(trkpt.point.lat, trkpt.point.lng);
+      root["processing_points"].fetched++;
     }
     for(const trkpt of trackPoints){
       delete trkpt.fetchingEle;
       delete trkpt.flattened;
     }
+    
+    root["processing_points"].total -= trackPoints.length;
+    root["processing_points"].fetched -= trackPoints.length;
     
     // なぜか獲得標高の計算にトンネル補正がなぜかかからない(たぶん路面状態の取得とタイミングが合わなくなる)ので、1秒後に再計算・描画させる。
     (function(activeMap){
@@ -145,17 +166,23 @@
     })(this);
   }
   
-  if(!(global["__330k_fetchElevations_org"])){
-    global["__330k_fetchElevations_org"] = rwgps.Map.prototype.fetchElevations;
-  }
-  if(rwgps.Map.prototype.fetchElevations === global["__330k_fetchElevations_org"]){
+  if(rwgps.Map.prototype.fetchElevations === root["fetchElevations_org"]){
     // RWGPSのfetchElevations関数を書き換える
     rwgps.Map.prototype.fetchElevations = _fetchElevations;
     document.getElementById("%%TEMPLATE_BUTTON_ID%%").style.borderColor = "pink";
   }else{
     // 元に戻す
-    rwgps.Map.prototype.fetchElevations = global["__330k_fetchElevations_org"];
+    rwgps.Map.prototype.fetchElevations = root["fetchElevations_org"];
     document.getElementById("%%TEMPLATE_BUTTON_ID%%").style.borderColor = "transparent";
   }
   
+  setInterval(() => {
+    const ele = document.getElementById("%%TEMPLATE_MESSAGE_ID%%");
+    if(root["processing_points"].fetched < root["processing_points"].total){
+      ele.style.borderWidth = "1px";
+      ele.style.width = (root["processing_points"].fetched * 100 / root["processing_points"].total) + "%";
+    }else{
+      ele.style.borderWidth = "0px";
+    }
+  }, 100);
 })(window);
