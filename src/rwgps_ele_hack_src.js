@@ -137,6 +137,7 @@
   };
   
   async function _fetchElevations(trackPoints, _success) {
+    const fallbackpoints = [];
     root["processing_points"].total += trackPoints.length;
     
     for(const trkpt of trackPoints){
@@ -146,18 +147,22 @@
     for(const trkpt of trackPoints){
       trkpt.ele = await getElevationGSI(trkpt.point.lat, trkpt.point.lng);
       if(trkpt.ele === null){
-        // 国土地理院タイルがエラーだった場合(水辺など)は、標準の関数を呼び出す
         console.log("TILE_ERROR");
-        await new Promise(function(resolve){
-          root["fetchElevations_org"]([trkpt], resolve);
-        });
-        console.log(trkpt.ele);
+        fallbackpoints.push(trkpt);
       }
       root["processing_points"].fetched++;
     }
     for(const trkpt of trackPoints){
       delete trkpt.fetchingEle;
       delete trkpt.flattened;
+    }
+    
+    // 国土地理院タイルがエラーだった場合(水辺など)は、標準の関数を呼び出す
+    if(fallbackpoints.length > 0){
+      await new Promise(function(resolve){
+        root["fetchElevations_org"](fallbackpoints, resolve);
+      });
+      console.log(fallbackpoints.map((e)=> e.ele));
     }
     
     root["processing_points"].total -= trackPoints.length;
