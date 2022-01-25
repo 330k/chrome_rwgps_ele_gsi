@@ -145,6 +145,14 @@
     
     for(const trkpt of trackPoints){
       trkpt.ele = await getElevationGSI(trkpt.point.lat, trkpt.point.lng);
+      if(trkpt.ele === null){
+        // 国土地理院タイルがエラーだった場合(水辺など)は、標準の関数を呼び出す
+        console.log("TILE_ERROR");
+        await new Promise(function(resolve){
+          root["fetchElevations_org"]([trkpt], resolve);
+        });
+        console.log(trkpt.ele);
+      }
       root["processing_points"].fetched++;
     }
     for(const trkpt of trackPoints){
@@ -155,15 +163,10 @@
     root["processing_points"].total -= trackPoints.length;
     root["processing_points"].fetched -= trackPoints.length;
     
-    // なぜか獲得標高の計算にトンネル補正がなぜかかからない(たぶん路面状態の取得とタイミングが合わなくなる)ので、1秒後に再計算・描画させる。
-    (function(activeMap){
-      setTimeout(() => {
-        _success();
-        setTimeout(() => {
-          activeMap.activeRoute.calculateMetrics();
-        }, 1000);
-      }, 1000);
-    })(this);
+    // すべての標高を得られたときに限り、_successを呼ぶ
+    if(root["processing_points"].fetched === 0){
+      _success();
+    }
   }
   
   if(rwgps.Map.prototype.fetchElevations === root["fetchElevations_org"]){
