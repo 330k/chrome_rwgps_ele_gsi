@@ -55,17 +55,16 @@
       let idx = l1_cache.findIndex((e) => e.url === url);
       if(idx >= 0){
         // L1キャッシュにヒット
+        let v = l1_cache.splice(idx, 1)[0];
         // L1キャッシュの先頭に移動(LRU)
-        l1_cache.unshift(l1_cache.splice(idx, 1)[0]);
+        l1_cache.unshift(v);
 
-        if(now > l1_cache[0].expire_on){
+        if(now > v.expire_on){
           // L1キャッシュで期限切れ
-          //console.log("L1 CACHE EXPIRED");
           l1_cache.shift();
           fetch_flag = true;
         }else{
-          //console.log("L1 CACHE HIT");
-          data = l1_cache[0].data;
+          data = v.data;
         }
 
       }else{
@@ -132,7 +131,7 @@
     
     return async function(response){
       if(response.ok){
-        const blob = await response.clone().blob();
+        const blob = await response.clone().blob(); // ユーザが連続して操作した場合にresponseが使用済みとなるのを防ぐためcloneして使用する
         const img = document.createElement("img");
         
         const image = await new Promise(function(resolve, reject){
