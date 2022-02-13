@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "version": "0.21",
+  "version": "0.3",
   "name": "RWGPS地理院標高",
   "short_name": "RWGPS-GSIELE",
   "description": "RWGPSでルートを作成するとき、標高値を国土地理院の標高タイル(基盤地図情報数値標高モデル)から取得するように変更します。",
@@ -15,5 +15,5 @@
   "icons": {
     "128": "img/tinypng/icon_02_128.png"
   },
-  "homepage_url": "https://www.330k.info/"
+  "homepage_url": "https://www.330k.info/software/chrome_rwgps_ele_gsi/"
 }
