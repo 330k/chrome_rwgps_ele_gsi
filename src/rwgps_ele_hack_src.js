@@ -24,7 +24,7 @@
    */
   function LayeredCache(cache_name, parser, l1_cache_size = 1000, cache_expiration = 30 * 86400 * 1000){
     const HEADER_EXPIRATION = "_expire_on";
-    const l1_cache = [];
+    const l1_cache = new Map();
     let l2_cache = null;
     let prepared = false;
     
@@ -52,32 +52,29 @@
         throw new Exception("Cache API not ready");
       }
       
-      let idx = l1_cache.findIndex((e) => e.url === url);
-      if(idx >= 0){
+      if(l1_cache.has(url)){
         // L1キャッシュにヒット
-        let v = l1_cache.splice(idx, 1)[0];
-        // L1キャッシュの先頭に移動(LRU)
-        l1_cache.unshift(v);
+        const v = l1_cache.get(url);
 
         if(now > v.expire_on){
           // L1キャッシュで期限切れ
-          l1_cache.shift();
           fetch_flag = true;
         }else{
+          // L1キャッシュの末尾に移動(LRU)
+          l1_cache.delete(url);
+          l1_cache.set(url, v);
           data = v.data;
         }
 
       }else{
-        let response = await l2_cache.match(url);
+        const response = await l2_cache.match(url);
         
         if((response === undefined)
           || response.headers.get(HEADER_EXPIRATION) === null
           || (now > Number.parseInt(response.headers.get(HEADER_EXPIRATION)))){
           // L2キャッシュにない場合、またはL2キャッシュが期限切れの場合
-          //console.log("L2 CACHE EXPIRED");
           fetch_flag = true;
         }else{
-          //console.log("L2 CACHE HIT");
           data = await parser(response);
           expiration = Number.parseInt(response.headers.get(HEADER_EXPIRATION));
           
@@ -87,7 +84,7 @@
       
       if(fetch_flag){
         // 通信して取得する
-        response = await fetch(url);
+        const response = await fetch(url);
         
         const copy = response.clone();
         const headers = new Headers(copy.headers);
@@ -106,14 +103,13 @@
       }
       
       if(l1_update_flag){
-        // L1キャッシュの先頭に保存
-        l1_cache.unshift({
-          url: url,
+        // L1キャッシュの末尾に保存
+        l1_cache.set(url, {
           data: data,
           expire_on: expiration
         });
         if(l1_cache.length > l1_cache_size){
-          l1_cache.length = l1_cache_size;
+          l1_cache.delete(l1_cache.keys().next().value);
         }
       }
       
