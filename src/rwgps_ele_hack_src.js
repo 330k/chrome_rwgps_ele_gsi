@@ -224,7 +224,8 @@
   
   async function _fetchElevations(trackPoints, _success) {
     const fallbackpoints = [];
-    root["processing_points"].total += trackPoints.length;
+    const num = trackPoints.length; // 処理中に変わることがあるので最初にtrackPointsの個数を保存しておく
+    root["processing_points"].total += num;
     
     for(const trkpt of trackPoints){
       trkpt.fetchingEle = true;
@@ -237,26 +238,29 @@
         fallbackpoints.push(trkpt);
       }else{
         root["processing_points"].fetched++;
-        delete trkpt.fetchingEle;
-        delete trkpt.flattened;
       }
+      delete trkpt.fetchingEle;
+      delete trkpt.flattened;
     }
     
-    // 国土地理院タイルがエラーだった場合(水辺など)は、標準の関数を呼び出す
+    // 国土地理院タイルがエラーだった地点(水辺など)は、標準の関数を呼び出す
     if(fallbackpoints.length > 0){
-      await new Promise(function(resolve){
-        root["fetchElevations_org"](fallbackpoints, resolve);
-      });
-      console.log(fallbackpoints.map((e)=> e.ele));
-      for(const trkpt of fallbackpoints){
-        root["processing_points"].fetched++;
-        delete trkpt.fetchingEle;
-        delete trkpt.flattened;
+      try{
+        await new Promise(function(resolve){
+          root["fetchElevations_org"](fallbackpoints, resolve);
+        });
+        console.log(fallbackpoints.map((e)=> e.ele));
+      }catch(e){
+        console.log("Fallback Error");
+        
+      }finally{
+        // エラーが出ようが取り敢えず処理済みとしてカウントする
+        root["processing_points"].fetched += fallbackpoints.length;
       }
     }
     
-    root["processing_points"].total -= trackPoints.length;
-    root["processing_points"].fetched -= trackPoints.length;
+    root["processing_points"].total -= num;
+    root["processing_points"].fetched -= num;
     
     // すべての標高を得られたときに限り、_successを呼ぶ
     if(root["processing_points"].fetched === 0){
