@@ -14,6 +14,7 @@
   const PROCESSING_POINTS_TOTAL = "processing_points_total";
   const PROCESSING_POINTS_FETCHED = "processing_points_fetched";
   const FETCH_ELEVATIONS_ORG = "fetchElevations_org";
+  const INTERVAL_TIMER = "interval_timer";
   
   global[GLOBAL_ROOT_VAR] = global[GLOBAL_ROOT_VAR] || {};
   const root = global[GLOBAL_ROOT_VAR];
@@ -274,7 +275,7 @@
     document.getElementById("%%TEMPLATE_BUTTON_ID%%").style.borderColor = "transparent";
   }
   
-  setInterval(() => {
+  root[INTERVAL_TIMER] = root[INTERVAL_TIMER] || setInterval(() => {
     const ele = document.getElementById("%%TEMPLATE_MESSAGE_ID%%");
     if(root[PROCESSING_POINTS_FETCHED] < root[PROCESSING_POINTS_TOTAL]){
       ele.style.backgroundColor = "red";
