@@ -10,11 +10,17 @@
     {tilename: "dem5c_png", zoom: 15},
     {tilename: "dem_png", zoom: 14}
   ];
+  const GLOBAL_ROOT_VAR = "__330k_ele_gsi";
+  const PROCESSING_POINTS_TOTAL = "processing_points_total";
+  const PROCESSING_POINTS_FETCHED = "processing_points_fetched";
+  const FETCH_ELEVATIONS_ORG = "fetchElevations_org";
   
-  if(!(global["__330k_ele_gsi"])){
-    global["__330k_ele_gsi"] = {};
-  }
-  const root = global["__330k_ele_gsi"];
+  global[GLOBAL_ROOT_VAR] = global[GLOBAL_ROOT_VAR] || {};
+  const root = global[GLOBAL_ROOT_VAR];
+  root[PROCESSING_POINTS_TOTAL] = root[PROCESSING_POINTS_TOTAL] || 0;
+  root[PROCESSING_POINTS_FETCHED] = root[PROCESSING_POINTS_FETCHED] || 0;
+  root[FETCH_ELEVATIONS_ORG] = root[FETCH_ELEVATIONS_ORG] || rwgps.Map.prototype.fetchElevations;
+  
   /**
    * L1, L2の2層のキャッシュ
    * @param {string} cache_name          Cache APIで使用する名前(cacheName)
@@ -146,16 +152,6 @@
   })();
   const layeredcache = new LayeredCache("__330k_gsi_ele_tile", tileparser);
   
-  if(!(root["fetchElevations_org"])){
-    root["fetchElevations_org"] = rwgps.Map.prototype.fetchElevations;
-  }
-  if(!(root["processing_points"])){
-    root["processing_points"] = {
-      fetched: 0,
-      total: 0
-    };
-  }
-  
   /**
    * 指定した緯度経度とズームレベルから、タイル番号とタイル内のx, y座標を返す
    * @param {number} lat 緯度
@@ -223,21 +219,21 @@
   };
   
   async function _fetchElevations(trackPoints, _success) {
+    const trkpts = [...trackPoints]; // 処理中に変わることがあるので最初にtrackPointsをコピーしておく
     const fallbackpoints = [];
-    const num = trackPoints.length; // 処理中に変わることがあるので最初にtrackPointsの個数を保存しておく
-    root["processing_points"].total += num;
+    root[PROCESSING_POINTS_TOTAL] += trkpts.length;
     
-    for(const trkpt of trackPoints){
+    for(const trkpt of trkpts){
       trkpt.fetchingEle = true;
     }
     
-    for(const trkpt of trackPoints){
+    for(const trkpt of trkpts){
       trkpt.ele = await getElevationGSI(trkpt.point.lat, trkpt.point.lng);
       if(trkpt.ele === null){
         console.log("TILE_ERROR");
         fallbackpoints.push(trkpt);
       }else{
-        root["processing_points"].fetched++;
+        root[PROCESSING_POINTS_FETCHED]++;
       }
       delete trkpt.fetchingEle;
       delete trkpt.flattened;
@@ -247,7 +243,7 @@
     if(fallbackpoints.length > 0){
       try{
         await new Promise(function(resolve){
-          root["fetchElevations_org"](fallbackpoints, resolve);
+          root[FETCH_ELEVATIONS_ORG](fallbackpoints, resolve);
         });
         console.log(fallbackpoints.map((e)=> e.ele));
       }catch(e){
@@ -255,34 +251,34 @@
         
       }finally{
         // エラーが出ようが取り敢えず処理済みとしてカウントする
-        root["processing_points"].fetched += fallbackpoints.length;
+        root[PROCESSING_POINTS_FETCHED] += fallbackpoints.length;
       }
     }
     
-    root["processing_points"].total -= num;
-    root["processing_points"].fetched -= num;
+    root[PROCESSING_POINTS_TOTAL] -= trkpts.length;
+    root[PROCESSING_POINTS_FETCHED] -= trkpts.length;
     
     // すべての標高を得られたときに限り、_successを呼ぶ
-    if(root["processing_points"].fetched === 0){
+    if(root[PROCESSING_POINTS_FETCHED] === 0){
       _success();
     }
   }
   
-  if(rwgps.Map.prototype.fetchElevations === root["fetchElevations_org"]){
+  if(rwgps.Map.prototype.fetchElevations === root[FETCH_ELEVATIONS_ORG]){
     // RWGPSのfetchElevations関数を書き換える
     rwgps.Map.prototype.fetchElevations = _fetchElevations;
     document.getElementById("%%TEMPLATE_BUTTON_ID%%").style.borderColor = "pink";
   }else{
     // 元に戻す
-    rwgps.Map.prototype.fetchElevations = root["fetchElevations_org"];
+    rwgps.Map.prototype.fetchElevations = root[FETCH_ELEVATIONS_ORG];
     document.getElementById("%%TEMPLATE_BUTTON_ID%%").style.borderColor = "transparent";
   }
   
   setInterval(() => {
     const ele = document.getElementById("%%TEMPLATE_MESSAGE_ID%%");
-    if(root["processing_points"].fetched < root["processing_points"].total){
+    if(root[PROCESSING_POINTS_FETCHED] < root[PROCESSING_POINTS_TOTAL]){
       ele.style.backgroundColor = "red";
-      ele.style.width = (root["processing_points"].fetched * 100 / root["processing_points"].total) + "%";
+      ele.style.width = (root[PROCESSING_POINTS_FETCHED] * 100 / root[PROCESSING_POINTS_TOTAL]) + "%";
     }else{
       ele.style.backgroundColor = "transparent";
     }
