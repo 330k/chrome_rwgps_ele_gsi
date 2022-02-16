@@ -1,7 +1,7 @@
 // https://www.toptal.com/developers/javascript-minifier/
 // minifyしたものをrwgps_ele_hack.jsのfunc_strにコピー
 
-(function(global){
+((global) => {
   const TILE_SIZE = 256;
   const TILE_NULL_SYMBOL = "__NOT_EXISTS__"; // タイルファイルが存在しないことを示すシンボル
   const TILE_ORDER = [ // 検索順序とズームレベル
@@ -10,7 +10,7 @@
     {tilename: "dem5c_png", zoom: 15},
     {tilename: "dem_png", zoom: 14}
   ];
-  const GLOBAL_ROOT_VAR = "__330k_ele_gsi";
+  const GLOBAL_ROOT_VAR = "__330k_ele_gsi"; // 繰り返しOn/Offされた時に進行状況等を保存するためにグローバル変数に格納
   const PROCESSING_POINTS_TOTAL = "processing_points_total";
   const PROCESSING_POINTS_FETCHED = "processing_points_fetched";
   const FETCH_ELEVATIONS_ORG = "fetchElevations_org";
@@ -47,7 +47,7 @@
      * @param {string} url
      * @return {Promise}
      */
-    this.fetch = async function(url){
+    this.fetch = async (url) => {
       let data = null;
       let fetch_flag = false;
       let l1_update_flag = false;
@@ -126,20 +126,20 @@
     return this;
   }
   
-  const tileparser = (function(){
+  const tileparser = (() => {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
     canvas.width = TILE_SIZE;
     canvas.height = TILE_SIZE;
     
-    return async function(response){
+    return async (response) => {
       if(response.ok){
         const blob = await response.clone().blob(); // ユーザが連続して操作した場合にresponseが使用済みとなるのを防ぐためcloneして使用する
         const img = document.createElement("img");
         
-        const image = await new Promise(function(resolve, reject){
+        const image = await new Promise((resolve, reject)=>{
           img.src = URL.createObjectURL(blob);
-          img.onload = function(){ resolve(img); };
+          img.onload = () => { resolve(img); };
           
         });
         ctx.drawImage(image, 0, 0, TILE_SIZE, TILE_SIZE);
@@ -243,7 +243,7 @@
     // 国土地理院タイルがエラーだった地点(水辺など)は、標準の関数を呼び出す
     if(fallbackpoints.length > 0){
       try{
-        await new Promise(function(resolve){
+        await new Promise((resolve) => {
           root[FETCH_ELEVATIONS_ORG](fallbackpoints, resolve);
         });
         console.log(fallbackpoints.map((e)=> e.ele));
