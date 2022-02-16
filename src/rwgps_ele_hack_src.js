@@ -137,12 +137,12 @@
         const blob = await response.clone().blob(); // ユーザが連続して操作した場合にresponseが使用済みとなるのを防ぐためcloneして使用する
         const img = document.createElement("img");
         
-        const image = await new Promise((resolve, reject)=>{
+        const image = await new Promise((resolve, reject) => {
           img.src = URL.createObjectURL(blob);
           img.onload = () => { resolve(img); };
-          
         });
         ctx.drawImage(image, 0, 0, TILE_SIZE, TILE_SIZE);
+        URL.revokeObjectURL(img.src);
         
         return ctx.getImageData(0, 0, TILE_SIZE, TILE_SIZE).data;
         
