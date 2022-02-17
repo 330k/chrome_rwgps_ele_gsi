@@ -187,7 +187,7 @@
     }
     
     return ele;
-  };
+  }
   
   /**
    * 指定した緯度経度の標高を基盤地図情報APIから取得(内部関数)
@@ -217,7 +217,7 @@
       return null;
     }
     
-  };
+  }
   
   async function _fetchElevations(trackPoints, _success) {
     const trkpts = [...trackPoints]; // 処理中に変わることがあるので最初にtrackPointsをコピーしておく
