@@ -129,13 +129,13 @@
   const tileparser = (() => {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
+    const img = document.createElement("img");
     canvas.width = TILE_SIZE;
     canvas.height = TILE_SIZE;
     
     return async (response) => {
       if(response.ok){
         const blob = await response.clone().blob(); // ユーザが連続して操作した場合にresponseが使用済みとなるのを防ぐためcloneして使用する
-        const img = document.createElement("img");
         
         const image = await new Promise((resolve, reject) => {
           img.src = URL.createObjectURL(blob);
