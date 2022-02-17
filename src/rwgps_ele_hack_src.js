@@ -229,25 +229,35 @@
     }
     
     for(const trkpt of trkpts){
-      trkpt.ele = await getElevationGSI(trkpt.point.lat, trkpt.point.lng);
-      if(trkpt.ele === null){
-        console.log("TILE_ERROR");
+      try{
+        trkpt.ele = await getElevationGSI(trkpt.point.lat, trkpt.point.lng);
+        if(trkpt.ele === null){
+          throw new Error("TILE ELE ERROR");
+        }else{
+          // 正常に取得
+          root[PROCESSING_POINTS_FETCHED]++;
+          delete trkpt.fetchingEle;
+          delete trkpt.flattened;
+        }
+      }catch(err){
+        // エラー発生時はフォールバック
         fallbackpoints.push(trkpt);
-      }else{
-        root[PROCESSING_POINTS_FETCHED]++;
+        console.log(err);
       }
-      delete trkpt.fetchingEle;
-      delete trkpt.flattened;
     }
     
     // 国土地理院タイルがエラーだった地点(水辺など)は、標準の関数を呼び出す
     if(fallbackpoints.length > 0){
       try{
+        fallbackpoints.map((trkpt) => {
+          delete trkpt.fetchingEle;
+          delete trkpt.flattened;
+        });
         await new Promise((resolve) => {
           root[FETCH_ELEVATIONS_ORG](fallbackpoints, resolve);
         });
         console.log(fallbackpoints.map((e)=> e.ele));
-      }catch(e){
+      }catch(err){
         console.log("Fallback Error");
         
       }finally{
