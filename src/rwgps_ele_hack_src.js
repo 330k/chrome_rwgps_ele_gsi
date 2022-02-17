@@ -165,8 +165,8 @@
     return {
       "tile_x" : Math.floor(x),
       "tile_y" : Math.floor(y),
-      "pixel_x" : (x - Math.floor(x)) * 256,
-      "pixel_y" : (y - Math.floor(y)) * 256
+      "pixel_x" : (x - Math.floor(x)) * TILE_SIZE,
+      "pixel_y" : (y - Math.floor(y)) * TILE_SIZE
     };
   }
   
@@ -197,7 +197,7 @@
    * @param {number} zoom ズームレベル(タイルにより1-15, 1-14)
    * @return {Promise}
    */
-  async function _getElevationGSI(lat, lon, tilename = "dem5a_png", zoom = 15){
+  async function _getElevationGSI(lat, lon, tilename, zoom){
     const tileinfo = latlon2tile(lat, lon, zoom);
     const imagedata = await layeredcache.fetch("https://cyberjapandata.gsi.go.jp/xyz/" + tilename + "/" + zoom + "/" + tileinfo.tile_x + "/" + tileinfo.tile_y + ".png");
     
