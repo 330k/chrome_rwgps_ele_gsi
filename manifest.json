@@ -1,13 +1,13 @@
 {
   "manifest_version": 3,
-  "version": "0.3",
+  "version": "0.31",
   "name": "RWGPS地理院標高",
   "short_name": "RWGPS-GSIELE",
   "description": "RWGPSでルートを作成するとき、標高値を国土地理院の標高タイル(基盤地図情報数値標高モデル)から取得するように変更します。",
   "host_permissions": [ "https://ridewithgps.com/routes/*" ],
   "content_scripts": [
     {
-      "matches": ["https://ridewithgps.com/routes/new", "https://ridewithgps.com/routes/*/edit*"],
+      "matches": ["https://ridewithgps.com/routes/new*", "https://ridewithgps.com/routes/*/edit*"],
       "run_at": "document_end",
       "js": ["rwgps_ele_hack.js"]
     }

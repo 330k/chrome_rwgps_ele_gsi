@@ -20,7 +20,7 @@
   const root = global[GLOBAL_ROOT_VAR];
   root[PROCESSING_POINTS_TOTAL] = root[PROCESSING_POINTS_TOTAL] || 0;
   root[PROCESSING_POINTS_FETCHED] = root[PROCESSING_POINTS_FETCHED] || 0;
-  root[FETCH_ELEVATIONS_ORG] = root[FETCH_ELEVATIONS_ORG] || rwgps.Map.prototype.fetchElevations;
+  root[FETCH_ELEVATIONS_ORG] = root[FETCH_ELEVATIONS_ORG] || Routes.activeMap.fetchElevations;
   
   /**
    * L1, L2の2層のキャッシュ
@@ -275,13 +275,13 @@
     }
   }
   
-  if(rwgps.Map.prototype.fetchElevations === root[FETCH_ELEVATIONS_ORG]){
+  if(Routes.activeMap.fetchElevations === root[FETCH_ELEVATIONS_ORG]){
     // RWGPSのfetchElevations関数を書き換える
-    rwgps.Map.prototype.fetchElevations = _fetchElevations;
+    Routes.activeMap.fetchElevations = _fetchElevations;
     document.getElementById("%%TEMPLATE_BUTTON_ID%%").style.borderColor = "pink";
   }else{
     // 元に戻す
-    rwgps.Map.prototype.fetchElevations = root[FETCH_ELEVATIONS_ORG];
+    Routes.activeMap.fetchElevations = root[FETCH_ELEVATIONS_ORG];
     document.getElementById("%%TEMPLATE_BUTTON_ID%%").style.borderColor = "transparent";
   }
   
