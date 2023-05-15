@@ -11,16 +11,12 @@
     {tilename: "dem_png", zoom: 14}
   ];
   const GLOBAL_ROOT_VAR = "__330k_ele_gsi"; // 繰り返しOn/Offされた時に進行状況等を保存するためにグローバル変数に格納
-  const PROCESSING_POINTS_TOTAL = "processing_points_total";
-  const PROCESSING_POINTS_FETCHED = "processing_points_fetched";
   const FETCH_ELEVATIONS_ORG = "fetchElevations_org";
   const INTERVAL_TIMER = "interval_timer";
   
-  global[GLOBAL_ROOT_VAR] = global[GLOBAL_ROOT_VAR] || {};
+  global[GLOBAL_ROOT_VAR] = global[GLOBAL_ROOT_VAR] ?? {};
   const root = global[GLOBAL_ROOT_VAR];
-  root[PROCESSING_POINTS_TOTAL] = root[PROCESSING_POINTS_TOTAL] || 0;
-  root[PROCESSING_POINTS_FETCHED] = root[PROCESSING_POINTS_FETCHED] || 0;
-  root[FETCH_ELEVATIONS_ORG] = root[FETCH_ELEVATIONS_ORG] || Routes.activeMap.fetchElevations;
+  root[FETCH_ELEVATIONS_ORG] = root[FETCH_ELEVATIONS_ORG] ?? Routes.activeMap.fetchElevations;
   
   /**
    * L1, L2の2層のキャッシュ
@@ -220,24 +216,22 @@
   }
   
   async function _fetchElevations(trackPoints, _success) {
-    const trkpts = [...trackPoints]; // 処理中に変わることがあるので最初にtrackPointsをコピーしておく
+    const trkpts = trackPoints.filter(e => e.fetchingEle !== true); // 取得中のポイントは対象外
     const fallbackpoints = [];
-    root[PROCESSING_POINTS_TOTAL] += trkpts.length;
     
     for(const trkpt of trkpts){
       trkpt.fetchingEle = true;
+      trkpt.fetchingEleCompleted = false;
     }
     
     for(const trkpt of trkpts){
       try{
         trkpt.ele = await getElevationGSI(trkpt.point.lat, trkpt.point.lng);
-        if(trkpt.ele === null){
-          throw new Error("TILE ELE ERROR");
-        }else{
+        if(Number.isFinite(trkpt.ele)){
           // 正常に取得
-          root[PROCESSING_POINTS_FETCHED]++;
-          delete trkpt.fetchingEle;
-          delete trkpt.flattened;
+          trkpt.fetchingEleCompleted = true;
+        }else{
+          throw new Error("TILE ELE ERROR");
         }
       }catch(err){
         // エラー発生時はフォールバック
@@ -249,28 +243,37 @@
     // 国土地理院タイルがエラーだった地点(水辺など)は、標準の関数を呼び出す
     if(fallbackpoints.length > 0){
       try{
-        fallbackpoints.map((trkpt) => {
-          delete trkpt.fetchingEle;
-          delete trkpt.flattened;
-        });
         await new Promise((resolve) => {
           root[FETCH_ELEVATIONS_ORG](fallbackpoints, resolve);
         });
+        for(const fbp of fallbackpoints){
+          if(Number.isFinite(fbp.ele)){
+            fbp.fetchingEleCompleted = true;
+          }else{
+            console.log("Fallback Error");
+          }
+        }
         console.log(fallbackpoints.map((e)=> e.ele));
       }catch(err){
         console.log("Fallback Error");
         
       }finally{
         // エラーが出ようが取り敢えず処理済みとしてカウントする
-        root[PROCESSING_POINTS_FETCHED] += fallbackpoints.length;
+        //root[PROCESSING_POINTS_FETCHED] += fallbackpoints.length;
       }
     }
     
-    root[PROCESSING_POINTS_TOTAL] -= trkpts.length;
-    root[PROCESSING_POINTS_FETCHED] -= trkpts.length;
-    
+    console.log({
+      "requested": trkpts.filter(e => e.fetchingEle).length,
+      "completed": trkpts.filter(e => e.fetchingEleCompleted).length
+    });
+    for(const trkpt of trkpts.filter(e => e.fetchingEle && e.fetchingEleCompleted)){
+      delete trkpt.fetchingEle;
+      delete trkpt.flattened;
+      delete trkpt.fetchingEleCompleted;
+    }
     // すべての標高を得られたときに限り、_successを呼ぶ
-    if(root[PROCESSING_POINTS_FETCHED] === 0){
+    if(trkpts.filter(e => e.fetchingEle).length === 0){
       _success();
     }
   }
@@ -285,11 +288,12 @@
     document.getElementById("%%TEMPLATE_BUTTON_ID%%").style.borderColor = "transparent";
   }
   
-  root[INTERVAL_TIMER] = root[INTERVAL_TIMER] || setInterval(() => {
+  root[INTERVAL_TIMER] = root[INTERVAL_TIMER] ?? setInterval(() => {
     const ele = document.getElementById("%%TEMPLATE_MESSAGE_ID%%");
-    if(root[PROCESSING_POINTS_FETCHED] < root[PROCESSING_POINTS_TOTAL]){
+    const trkpts = Routes.activeMap.activeRoute.trackPoints();
+    if(trkpts.filter(e => e.fetchingEle).length){
       ele.style.backgroundColor = "red";
-      ele.style.width = (root[PROCESSING_POINTS_FETCHED] * 100 / root[PROCESSING_POINTS_TOTAL]) + "%";
+      ele.style.width = (trkpts.filter(e => e.fetchingEleCompleted).length * 100 / trkpts.filter(e => e.fetchingEle).length) + "%";
     }else{
       ele.style.backgroundColor = "transparent";
     }
