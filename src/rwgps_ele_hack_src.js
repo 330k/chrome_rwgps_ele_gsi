@@ -215,8 +215,8 @@
     
   }
   
-  async function _fetchElevations(trkpts/*trackPoints*/, _success) {
-    //const trkpts = trackPoints.filter(e => e.fetchingEle !== true); // 取得中のポイントは対象外?
+  async function _fetchElevations(trackPoints, _success) {
+    const trkpts = trackPoints.filter(e => e.fetchingEle !== true); // 取得中のポイントは対象外?
     const fallbackpoints = [];
     
     for(const trkpt of trkpts){
@@ -230,6 +230,7 @@
         if(Number.isFinite(ele)){
           // 正常に取得
           trkpt.ele = ele;
+          trkpt.flattened = false;
           trkpt.fetchingEleCompleted = true;
         }else{
           throw new Error("TILE ELE ERROR");
@@ -249,6 +250,7 @@
         });
         for(const fbp of fallbackpoints){
           if(Number.isFinite(fbp.ele)){
+            //trkpt.flattened = false; // 標準の関数内でfalseに設定されるため不要
             fbp.fetchingEleCompleted = true;
           }else{
             console.log("Fallback Error");
@@ -261,7 +263,7 @@
     }
     
     console.log({
-      //"argument": trackPoints.length,
+      "argument": trackPoints.length,
       "requested": trkpts.length,
       "completed": trkpts.filter(e => e.fetchingEleCompleted).length
     });
