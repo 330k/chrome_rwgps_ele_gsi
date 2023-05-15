@@ -215,8 +215,8 @@
     
   }
   
-  async function _fetchElevations(trackPoints, _success) {
-    const trkpts = trackPoints.filter(e => e.fetchingEle !== true); // 取得中のポイントは対象外
+  async function _fetchElevations(trkpts/*trackPoints*/, _success) {
+    //const trkpts = trackPoints.filter(e => e.fetchingEle !== true); // 取得中のポイントは対象外?
     const fallbackpoints = [];
     
     for(const trkpt of trkpts){
@@ -226,9 +226,10 @@
     
     for(const trkpt of trkpts){
       try{
-        trkpt.ele = await getElevationGSI(trkpt.point.lat, trkpt.point.lng);
-        if(Number.isFinite(trkpt.ele)){
+        let ele = await getElevationGSI(trkpt.point.lat, trkpt.point.lng);
+        if(Number.isFinite(ele)){
           // 正常に取得
+          trkpt.ele = ele;
           trkpt.fetchingEleCompleted = true;
         }else{
           throw new Error("TILE ELE ERROR");
@@ -256,24 +257,23 @@
         console.log(fallbackpoints.map((e)=> e.ele));
       }catch(err){
         console.log("Fallback Error");
-        
-      }finally{
-        // エラーが出ようが取り敢えず処理済みとしてカウントする
-        //root[PROCESSING_POINTS_FETCHED] += fallbackpoints.length;
       }
     }
     
     console.log({
-      "requested": trkpts.filter(e => e.fetchingEle).length,
+      //"argument": trackPoints.length,
+      "requested": trkpts.length,
       "completed": trkpts.filter(e => e.fetchingEleCompleted).length
     });
-    for(const trkpt of trkpts.filter(e => e.fetchingEle && e.fetchingEleCompleted)){
-      delete trkpt.fetchingEle;
-      delete trkpt.flattened;
-      delete trkpt.fetchingEleCompleted;
+    for(const trkpt of trkpts){
+      if(Number.isFinite(trkpt.ele)){
+        delete trkpt.fetchingEle;
+        delete trkpt.fetchingEleCompleted;
+      }
     }
+    
     // すべての標高を得られたときに限り、_successを呼ぶ
-    if(trkpts.filter(e => e.fetchingEle).length === 0){
+    if(trkpts.filter(e => !Number.isFinite(e.ele)).length === 0){
       _success();
     }
   }
@@ -297,5 +297,5 @@
     }else{
       ele.style.backgroundColor = "transparent";
     }
-  }, 100);
+  }, 200);
 })(window);
