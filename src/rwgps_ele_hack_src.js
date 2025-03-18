@@ -11,12 +11,12 @@
     {tilename: "dem_png", zoom: 14}
   ];
   const GLOBAL_ROOT_VAR = "__330k_ele_gsi"; // 繰り返しOn/Offされた時に進行状況等を保存するためにグローバル変数に格納
-  const FETCH_ELEVATIONS_ORG = "fetchElevations_org";
+  const ORG_FUNCTION = "injectElevations_org";
   const INTERVAL_TIMER = "interval_timer";
   
   global[GLOBAL_ROOT_VAR] = global[GLOBAL_ROOT_VAR] ?? {};
   const root = global[GLOBAL_ROOT_VAR];
-  root[FETCH_ELEVATIONS_ORG] = root[FETCH_ELEVATIONS_ORG] ?? Routes.activeMap.fetchElevations;
+  root[ORG_FUNCTION] = root[ORG_FUNCTION] ?? Routes.activeMap.activeRoute.injectElevations;
   
   /**
    * L1, L2の2層のキャッシュ
@@ -215,6 +215,11 @@
     
   }
   
+  function _injectElevations(){
+    return new Promise(function(resolve, reject){
+      _fetchElevations(Routes.activeMap.activeRoute.trackPoints().filter(e => !Number.isFinite(e.ele)), resolve);
+    });
+  }
   async function _fetchElevations(trackPoints, _success) {
     const trkpts = trackPoints.filter(e => e.fetchingEle !== true); // 取得中のポイントは対象外?
     const fallbackpoints = [];
@@ -245,8 +250,8 @@
     // 国土地理院タイルがエラーだった地点(水辺など)は、標準の関数を呼び出す
     if(fallbackpoints.length > 0){
       try{
-        await new Promise((resolve) => {
-          root[FETCH_ELEVATIONS_ORG](fallbackpoints, resolve);
+/*        await new Promise((resolve) => {
+          root[ORG_FUNCTION](fallbackpoints, resolve);
         });
         for(const fbp of fallbackpoints){
           if(Number.isFinite(fbp.ele)){
@@ -257,6 +262,8 @@
           }
         }
         console.log(fallbackpoints.map((e)=> e.ele));
+*/
+        await root[ORG_FUNCTION]();
       }catch(err){
         console.log("Fallback Error");
       }
@@ -280,13 +287,13 @@
     }
   }
   
-  if(Routes.activeMap.fetchElevations === root[FETCH_ELEVATIONS_ORG]){
+  if(Routes.activeMap.activeRoute.injectElevations === root[ORG_FUNCTION]){
     // RWGPSのfetchElevations関数を書き換える
-    Routes.activeMap.fetchElevations = _fetchElevations;
+    Routes.activeMap.activeRoute.injectElevations = _injectElevations;
     document.getElementById("%%TEMPLATE_BUTTON_ID%%").style.borderColor = "pink";
   }else{
     // 元に戻す
-    Routes.activeMap.fetchElevations = root[FETCH_ELEVATIONS_ORG];
+    Routes.activeMap.activeRoute.injectElevations = root[ORG_FUNCTION];
     document.getElementById("%%TEMPLATE_BUTTON_ID%%").style.borderColor = "transparent";
   }
   
