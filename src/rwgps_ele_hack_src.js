@@ -12,6 +12,7 @@
   ];
   const GLOBAL_ROOT_VAR = "__330k_ele_gsi"; // 繰り返しOn/Offされた時に進行状況等を保存するためにグローバル変数に格納
   const ORG_FUNCTION = "injectElevations_org";
+  const GSI_FUNCTION = "injectElevations_gsi";
   const INTERVAL_TIMER = "interval_timer";
   
   global[GLOBAL_ROOT_VAR] = global[GLOBAL_ROOT_VAR] ?? {};
@@ -215,7 +216,7 @@
     
   }
   
-  function _injectElevations(){
+  root[GSI_FUNCTION] = root[GSI_FUNCTION] ?? function(){
     return new Promise(function(resolve, reject){
       _fetchElevations(Routes.activeMap.activeRoute.trackPoints().filter(e => !Number.isFinite(e.ele)), resolve);
     });
@@ -287,9 +288,9 @@
     }
   }
   
-  if(Routes.activeMap.activeRoute.injectElevations === root[ORG_FUNCTION]){
+  if(Routes.activeMap.activeRoute.injectElevations !== root[GSI_FUNCTION]){
     // RWGPSのfetchElevations関数を書き換える
-    Routes.activeMap.activeRoute.injectElevations = _injectElevations;
+    Routes.activeMap.activeRoute.injectElevations = root[GSI_FUNCTION];
     document.getElementById("%%TEMPLATE_BUTTON_ID%%").style.borderColor = "pink";
   }else{
     // 元に戻す
@@ -305,6 +306,12 @@
       ele.style.width = (trkpts.filter(e => e.fetchingEleCompleted).length * 100 / trkpts.filter(e => e.fetchingEle).length) + "%";
     }else{
       ele.style.backgroundColor = "transparent";
+    }
+    // Undoなどで戻ってしまうことがあるので監視
+    if(Routes.activeMap.activeRoute.injectElevations === root[GSI_FUNCTION]){
+      document.getElementById("%%TEMPLATE_BUTTON_ID%%").style.borderColor = "pink";
+    }else{
+      document.getElementById("%%TEMPLATE_BUTTON_ID%%").style.borderColor = "transparent";
     }
   }, 200);
 })(window);
