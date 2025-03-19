@@ -13,11 +13,13 @@
   const GLOBAL_ROOT_VAR = "__330k_ele_gsi"; // 繰り返しOn/Offされた時に進行状況等を保存するためにグローバル変数に格納
   const ORG_FUNCTION = "injectElevations_org";
   const GSI_FUNCTION = "injectElevations_gsi";
+  const FUNCTION_ENABLED = "gsi_enabled";
   const INTERVAL_TIMER = "interval_timer";
   
   global[GLOBAL_ROOT_VAR] = global[GLOBAL_ROOT_VAR] ?? {};
   const root = global[GLOBAL_ROOT_VAR];
   root[ORG_FUNCTION] = root[ORG_FUNCTION] ?? Routes.activeMap.activeRoute.injectElevations;
+  root[FUNCTION_ENABLED] = root[FUNCTION_ENABLED] ?? false;
   
   /**
    * L1, L2の2層のキャッシュ
@@ -251,19 +253,6 @@
     // 国土地理院タイルがエラーだった地点(水辺など)は、標準の関数を呼び出す
     if(fallbackpoints.length > 0){
       try{
-/*        await new Promise((resolve) => {
-          root[ORG_FUNCTION](fallbackpoints, resolve);
-        });
-        for(const fbp of fallbackpoints){
-          if(Number.isFinite(fbp.ele)){
-            //trkpt.flattened = false; // 標準の関数内でfalseに設定されるため不要
-            fbp.fetchingEleCompleted = true;
-          }else{
-            console.log("Fallback Error");
-          }
-        }
-        console.log(fallbackpoints.map((e)=> e.ele));
-*/
         await root[ORG_FUNCTION]();
       }catch(err){
         console.log("Fallback Error");
@@ -291,10 +280,12 @@
   if(Routes.activeMap.activeRoute.injectElevations !== root[GSI_FUNCTION]){
     // RWGPSのfetchElevations関数を書き換える
     Routes.activeMap.activeRoute.injectElevations = root[GSI_FUNCTION];
+    root[FUNCTION_ENABLED] = true;
     document.getElementById("%%TEMPLATE_BUTTON_ID%%").style.borderColor = "pink";
   }else{
     // 元に戻す
     Routes.activeMap.activeRoute.injectElevations = root[ORG_FUNCTION];
+    root[FUNCTION_ENABLED] = false;
     document.getElementById("%%TEMPLATE_BUTTON_ID%%").style.borderColor = "transparent";
   }
   
@@ -308,10 +299,14 @@
       ele.style.backgroundColor = "transparent";
     }
     // Undoなどで戻ってしまうことがあるので監視
+    if(root[FUNCTION_ENABLED] && (Routes.activeMap.activeRoute.injectElevations !== root[GSI_FUNCTION])){
+      Routes.activeMap.activeRoute.injectElevations = root[GSI_FUNCTION];
+    }
+    /*
     if(Routes.activeMap.activeRoute.injectElevations === root[GSI_FUNCTION]){
       document.getElementById("%%TEMPLATE_BUTTON_ID%%").style.borderColor = "pink";
     }else{
       document.getElementById("%%TEMPLATE_BUTTON_ID%%").style.borderColor = "transparent";
-    }
+    }*/
   }, 200);
 })(window);
