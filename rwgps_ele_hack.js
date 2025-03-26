@@ -35,7 +35,7 @@
     if(ele === null){
       ele = document.createElement("div");
       ele.id = BUTTON_BATCH_MOD_ELE_ID;
-      ele.innerHTML = "<a href='javascript:!function(){let e=Routes.activeMap,t=e.activeRoute,i=t.trackPoints(),n=()=>{i.length===i.filter(e=>void 0!==e.roadEnv).length?(e.loadElevationProfile(),t.rebuildBounds(),t.flattenBridgesAndTunnels(),t.calculateMetrics()):setTimeout(n,1e3)};e.injectSurfaces(i),e.fetchElevations(i,n)}();' accesskey='a'/>";
+      ele.innerHTML = "<a href='javascript:!function(){let e=Routes.activeMap.activeRoute;e.trackPoints().map(e=>e.ele=e.surface=void 0),e.injectElevationsAndSurfaces().then(()=>{e.calculateMetrics()})}();' accesskey='a'/>";
       ele.style.position = "absolute";
       ele.style.width = "0px";
       ele.style.height = "0px";

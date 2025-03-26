@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "version": "0.34",
+  "version": "0.35",
   "name": "RWGPS地理院標高",
   "short_name": "RWGPS-GSIELE",
   "description": "RWGPSでルートを作成するとき、標高値を国土地理院の標高タイル(基盤地図情報数値標高モデル)から取得するように変更するボタンを追加します。",
