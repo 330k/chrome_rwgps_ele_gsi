@@ -300,13 +300,8 @@
     }
     // Undoなどで戻ってしまうことがあるので監視
     if(root[FUNCTION_ENABLED] && (Routes.activeMap.activeRoute.injectElevations !== root[GSI_FUNCTION])){
+      root[ORG_FUNCTION] = Routes.activeMap.activeRoute.injectElevations;
       Routes.activeMap.activeRoute.injectElevations = root[GSI_FUNCTION];
     }
-    /*
-    if(Routes.activeMap.activeRoute.injectElevations === root[GSI_FUNCTION]){
-      document.getElementById("%%TEMPLATE_BUTTON_ID%%").style.borderColor = "pink";
-    }else{
-      document.getElementById("%%TEMPLATE_BUTTON_ID%%").style.borderColor = "transparent";
-    }*/
   }, 200);
 })(window);
